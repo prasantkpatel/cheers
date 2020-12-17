@@ -1,0 +1,23 @@
+{
+  "name": "cheers",
+  "version": "1.0.0",
+  "description": "This is a backend utility that feteches cocktail and user data fromopen APIs and stores them in a database and accordingly updates the UI.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "Poll",
+    "API",
+    "MongoDB",
+    "HTML"
+  ],
+  "author": "Prasant Kumar Patel",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongodb": "^3.6.3"
+  }
+}
