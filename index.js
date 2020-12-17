@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const mongodb = require('mongodb');
+const cron = require('node-cron');
 require('dotenv').config();
 
 const MongoClient = mongodb.MongoClient;
@@ -61,6 +62,15 @@ async function getUsers(last_uid) {
     });
 }
 
+function clean_db() {
+    db_client.db('cheers-db')
+    .collection('users')
+    .deleteMany({});
+    db_client.db('cheers-db')
+    .collection('drinks')
+    .deleteMany({});
+}
+
 async function getDrinks(last_did) {
     return new Promise((resolve, reject) => {
         db_client.db('cheers-db')
@@ -75,11 +85,10 @@ async function getDrinks(last_did) {
 }
 
 async function main() {
-    let pollId;
-
     (await db_client.connect()).withSession(() => {
         poll_apis(update_db);
-        pollId = setInterval(poll_apis, 5000, update_db);
+        setInterval(poll_apis, 5000, update_db);
+        setInterval(clean_db, 7200000);
     }).catch(err => console.error(err));
 
     app.use(express.static('public'));
