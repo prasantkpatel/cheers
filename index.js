@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require('axios');
 const mongodb = require('mongodb');
-const cron = require('node-cron');
 require('dotenv').config();
 
 const MongoClient = mongodb.MongoClient;
