@@ -7,9 +7,6 @@ const MongoClient = mongodb.MongoClient;
 const uri = process.env.MONGO_DB_URI;
 const app = express();
 const db_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-var last_uid = new mongodb.ObjectID('000000000000000000000000'); 
-var last_did = new mongodb.ObjectID('000000000000000000000000');
-
 let port = process.env.PORT || 8080;
 
 async function poll_apis(callback) {
@@ -51,32 +48,28 @@ async function update_db(obj) {
     console.log(`${a} user(s) and ${b} drink(s) were inserted!`);
 }
 
-async function getUsers() {
-    return new Promise(async (resolve, reject) => {
-        await db_client.db('cheers-db')
+async function getUsers(last_uid) {
+    return new Promise((resolve, reject) => {
+        db_client.db('cheers-db')
         .collection('users')
         .find({_id: {$gt: last_uid}})
         .sort({_id: -1})
         .limit(10)
         .toArray()
-        .then(arr => {
-            if (arr[0]) last_uid = arr[0]._id; 
-            resolve(arr);})
+        .then(arr => resolve(arr))
         .catch(err => reject(err));
     });
 }
 
-async function getDrinks() {
-    return new Promise(async (resolve, reject) => {
-        await db_client.db('cheers-db')
+async function getDrinks(last_did) {
+    return new Promise((resolve, reject) => {
+        db_client.db('cheers-db')
         .collection('drinks')
         .find({_id: {$gt: last_did}})
         .sort({_id: -1})
         .limit(10)
         .toArray()
-        .then(arr => {
-            if (arr[0]) last_did = arr[0]._id; 
-            resolve(arr);})
+        .then(arr => resolve(arr))
         .catch(err => reject(err));
     });
 }
@@ -91,14 +84,29 @@ async function main() {
 
     app.use(express.static('public'));
 
-    app.get('/users', async (req, res) => {
-        await getUsers()
+    app.use('/users', (req, res, next) => {
+        if(!req.query.last_uid || req.query.last_uid.length!=24)
+            req.query.last_uid = '000000000000000000000000';
+        req.query.last_uid = new mongodb.ObjectID(req.query.last_uid);
+        next();
+    });
+
+    app.use('/drinks', (req, res, next) => {
+        if(!req.query.last_did || req.query.last_did.length!=24)
+            req.query.last_did = '000000000000000000000000';
+        req.query.last_did = new mongodb.ObjectID(req.query.last_did);
+        next();
+    });
+
+    app.get('/users', (req, res) => {
+        console.log(typeof(req.query.last_uid), req.query.last_uid);
+        getUsers(req.query.last_uid)
         .then((obj) => res.json(obj))
         .catch(err => console.error(err));
     });
 
-    app.get('/drinks', async (req, res) => {
-        await getDrinks()
+    app.get('/drinks', (req, res) => {
+        getDrinks(req.query.last_did)
         .then((obj) => res.json(obj))
         .catch(err => console.error(err));
     });

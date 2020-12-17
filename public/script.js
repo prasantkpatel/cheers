@@ -1,11 +1,21 @@
+let last_uid='000000000000000000000000', last_did='000000000000000000000000';
+
 async function get_docs(update_cards) {
     let users = [], drinks = []
-    await axios.get(`${window.location.origin}/users`)
-    .then(res => users = res.data)
+    console.log('last_uid:', last_uid);
+    console.log('last_did:', last_did);
+    await axios.get(`${window.location.origin}/users?last_uid=${last_uid}`)
+    .then(res => {
+        users = res.data;
+        if(users[0]) last_uid = users[0]._id;
+    })
     .catch(err => console.error(err));
 
-    await axios.get(`${window.location.origin}/drinks`)
-    .then(res => drinks = res.data)
+    await axios.get(`${window.location.origin}/drinks?last_did=${last_did}`)
+    .then(res => {
+        drinks = res.data;
+        if(drinks[0]) last_did = drinks[0]._id;
+    })
     .catch(err => console.error(err));
 
     update_cards(users, drinks);
