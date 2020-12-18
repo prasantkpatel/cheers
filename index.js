@@ -103,7 +103,7 @@ async function main() {
     (await db_client.connect()).withSession(() => {
         poll_apis(update_db);
         setInterval(poll_apis, 5000, update_db);
-        setInterval(clean_db, 10000);
+        setInterval(clean_db, 7200000);
     }).catch(err => logError(err));
 
     app.use(express.static('public'));
