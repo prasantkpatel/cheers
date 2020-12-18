@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const mongodb = require('mongodb');
+const fs = require('fs');
 require('dotenv').config();
 
 const MongoClient = mongodb.MongoClient;
@@ -9,16 +10,20 @@ const app = express();
 const db_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 let port = process.env.PORT || 8080;
 
+function logError(err) {
+    console.error(err);
+}
+
 async function poll_apis(callback) {
     ret = {};
 
     await axios.get('https://www.thecocktaildb.com/api/json/v1/1/random.php')
     .then(res => ret.drinks = res.data)
-    .catch(err => console.error(err));
+    .catch(err => logError(err));
 
     await axios.get('https://randomuser.me/api/')
     .then(res => ret.users = res.data)
-    .catch(err => console.error(err));
+    .catch(err => logError(err));
 
     callback(ret);
 }
@@ -28,24 +33,24 @@ async function update_db(obj) {
     const user_col = db_client.db('cheers-db').collection('users');
     const drinks_col = db_client.db('cheers-db').collection('drinks');
 
-    console.log('\nUSER');
+    fs.appendFile('insertion.log', '\nUSER', () => {});
     if(obj.users) obj.users.results.forEach(user => user_doc.push(user));
-    console.log(user_doc);
+    fs.appendFile('insertion.log', JSON.stringify(user_doc), () => {});
 
-    console.log('\nCOCKTAIL')
+    fs.appendFile('insertion.log', '\nCOCKTAIL', () => {});
     if(obj.drinks) obj.drinks.drinks.forEach(drink => drinks_doc.push(drink));
-    console.log(drinks_doc);
+    fs.appendFile('insertion.log', JSON.stringify(drinks_doc), () => {});
     
     let a=0, b=0;
     await user_col.insertMany(user_doc)
     .then(user_res => a = user_res.insertedCount)
-    .catch(err => console.error(err));
+    .catch(err => logError(err));
 
     await drinks_col.insertMany(drinks_doc)
     .then(drinks_res => b = drinks_res.insertedCount)
-    .catch(err => console.error(err));
+    .catch(err => logError(err));
 
-    console.log(`${a} user(s) and ${b} drink(s) were inserted!`);
+    fs.appendFile('insertion.log', `\n${a} user(s) and ${b} drink(s) were inserted!`, () => {});
 }
 
 async function getUsers(last_uid) {
@@ -64,10 +69,21 @@ async function getUsers(last_uid) {
 function clean_db() {
     db_client.db('cheers-db')
     .collection('users')
-    .deleteMany({});
+    .deleteMany({})
+    .then(obj => {
+        fs.appendFile('clean.log', `\n${obj.deletedCount} users have been deleted`, () => {});
+    })
+    .catch(err => logError(err));
+
     db_client.db('cheers-db')
     .collection('drinks')
-    .deleteMany({});
+    .deleteMany({})
+    .then(obj => {
+        fs.appendFile('clean.log', `\n${obj.deletedCount} drinks have been deleted`, () => {});
+    })
+    .catch(err => logError(err));
+
+    fs.writeFile('insertion.log', '', () => {});
 }
 
 async function getDrinks(last_did) {
@@ -87,8 +103,8 @@ async function main() {
     (await db_client.connect()).withSession(() => {
         poll_apis(update_db);
         setInterval(poll_apis, 5000, update_db);
-        setInterval(clean_db, 7200000);
-    }).catch(err => console.error(err));
+        setInterval(clean_db, 10000);
+    }).catch(err => logError(err));
 
     app.use(express.static('public'));
 
@@ -107,19 +123,18 @@ async function main() {
     });
 
     app.get('/users', (req, res) => {
-        console.log(typeof(req.query.last_uid), req.query.last_uid);
         getUsers(req.query.last_uid)
         .then((obj) => res.json(obj))
-        .catch(err => console.error(err));
+        .catch(err => logError(err));
     });
 
     app.get('/drinks', (req, res) => {
         getDrinks(req.query.last_did)
         .then((obj) => res.json(obj))
-        .catch(err => console.error(err));
+        .catch(err => logError(err));
     });
 
     console.log(`Access the app: http://localhost:${port}`);
 }
 
-app.listen(port, main).on('error', (err) => console.error(err));
+app.listen(port, main).on('error', (err) => logError(err));
