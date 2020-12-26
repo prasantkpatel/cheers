@@ -4,4 +4,11 @@ Cheers is a minimalistic web-app that polls 2 rest APIs and stores their respons
 
 This project was done as part of the Internship assignment given to me by the company "TachStax Private Limited".
 
-Rename ".sample_env" to ".env" and replace the "YOUR_MONGODB_URI_HERE" with the actual mongodb uri.
+## Changes to be done
+
+### File Name: .sample_env
+
+1. Rename the file to ".env".
+2. Replace the occurence of "YOUR_MONGODB_URI_HERE" with the uri of mongodb database
+
+<b>Note: The databse must be named cheers-db and should contain two collections named drinks and users respectivley. </b>
